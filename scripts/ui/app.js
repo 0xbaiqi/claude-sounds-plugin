@@ -2,6 +2,61 @@
 
 const API = "";  // same origin
 
+// ── i18n ───────────────────────────────────────────────────────────────────────
+
+function applyLang() {
+  const set = (id, key) => { const el = document.getElementById(id); if (el) el.textContent = t(key); };
+  const attr = (id, attr, key) => { const el = document.getElementById(id); if (el) el[attr] = t(key); };
+
+  // Header
+  set("badge-text",           "loading");
+  attr("plugin-toggle-label", "title", "pluginToggleTip");
+  set("lang-btn",             "langToggle");
+
+  // Tabs
+  set("tab-btn-status",  "tabStatus");
+  set("tab-btn-themes",  "tabThemes");
+  set("tab-btn-store",   "tabStore");
+  set("tab-btn-project", "tabProject");
+
+  // Status tab
+  set("lbl-current-theme", "currentTheme");
+  set("lbl-global-theme",  "globalTheme");
+  set("lbl-hooks",         "hooks");
+  set("btn-stop-ui",       "stopUi");
+
+  // Themes tab
+  set("lbl-installed-themes", "installedThemes");
+  set("lbl-themes-loading",   "loading");
+  set("lbl-install-local",    "installLocal");
+  set("lbl-upload-hint",      "uploadHint");
+  set("lbl-upload-sub",       "uploadSub");
+
+  // Store tab
+  set("lbl-store-desc",    "storeDesc");
+  set("btn-refresh",       "refresh");
+  set("lbl-store-loading", "fetchingStore");
+
+  // Project tab
+  set("lbl-project-list",   "projectList");
+  set("lbl-select-project", "selectProject");
+  attr("manual-path", "placeholder", "pastePathHint");
+
+  // Re-render dynamic content if loaded
+  if (state.status)  renderStatus();
+  if (state.themes.length) renderThemes();
+  if (state.store)   renderStore();
+  if (state.activeTab === "project") renderProjectList();
+
+  // html lang attr
+  document.documentElement.lang = getLang() === "zh" ? "zh-CN" : "en";
+}
+
+function toggleLang() {
+  setLang(getLang() === "zh" ? "en" : "zh");
+  applyLang();
+}
+
 // ── Utils ──────────────────────────────────────────────────────────────────────
 
 async function api(method, path, body) {
@@ -79,7 +134,7 @@ function renderStatus() {
   // Header badge
   const badge = document.getElementById("header-badge");
   badge.className = `badge ${s.enabled ? "on" : "off"}`;
-  badge.innerHTML = `<span class="dot"></span>${s.enabled ? "运行中" : "已停用"}`;
+  badge.innerHTML = `<span class="dot"></span>${s.enabled ? t("running") : t("stopped")}`;
 
   // Plugin toggle
   document.getElementById("plugin-enabled").checked = s.enabled;
@@ -89,18 +144,18 @@ function renderStatus() {
 
   // Hooks
   const hooks = s.hooks || {};
-  const hookDescs = {
-    stop:         "任务完成时播放",
-    notification: "需要输入时播放",
-    error:        "出错时播放",
-    permission:   "工具调用前播放（默认关闭）",
+  const hookDescKeys = {
+    stop:         "hookStop",
+    notification: "hookNotification",
+    error:        "hookError",
+    permission:   "hookPermission",
   };
   const container = document.getElementById("hooks-list");
-  container.innerHTML = Object.entries(hookDescs).map(([h, desc]) => `
+  container.innerHTML = Object.entries(hookDescKeys).map(([h, key]) => `
     <div class="toggle">
       <div class="toggle-label">
         <span>${h}</span>
-        <span class="toggle-desc">${desc}</span>
+        <span class="toggle-desc">${t(key)}</span>
       </div>
       <label class="switch">
         <input type="checkbox" id="hook-${h}" ${hooks[h] !== false ? "checked" : ""}
@@ -115,13 +170,13 @@ async function setEnabled(val) {
   await api("POST", "/api/enable", { enabled: val });
   state.status.enabled = val;
   renderStatus();
-  toast(val ? "插件已启用" : "插件已停用");
+  toast(val ? t("pluginEnabled") : t("pluginDisabled"));
 }
 
 async function setHook(hook, val) {
   await api("POST", "/api/hook", { hook, enabled: val });
   state.status.hooks[hook] = val;
-  toast(`${hook} ${val ? "已开启" : "已关闭"}`);
+  toast(`${hook} ${val ? t("hookOn") : t("hookOff")}`);
 }
 
 // ── Themes tab ─────────────────────────────────────────────────────────────────
@@ -135,21 +190,21 @@ async function loadThemes() {
 function renderThemes() {
   const container = document.getElementById("themes-grid");
   if (!state.themes.length) {
-    container.innerHTML = '<div class="empty"><div class="empty-icon">🎵</div>暂无主题</div>';
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🎵</div>${t("noThemes")}</div>`;
     return;
   }
 
-  container.innerHTML = state.themes.map(t => `
-    <div class="theme-card ${t.active ? "active" : ""}" onclick="switchTheme('${t.name}')">
-      <div class="theme-name">${t.display_name || t.name}</div>
+  container.innerHTML = state.themes.map(th => `
+    <div class="theme-card ${th.active ? "active" : ""}" onclick="switchTheme('${th.name}')">
+      <div class="theme-name">${th.display_name || th.name}</div>
       <div class="theme-meta">
-        v${t.version || "—"}
-        ${t.builtin ? ' · <span style="color:var(--blue)">内置</span>' : ""}
+        v${th.version || "—"}
+        ${th.builtin ? ` · <span style="color:var(--blue)">${t("builtin")}</span>` : ""}
       </div>
       <div class="theme-actions" onclick="event.stopPropagation()">
-        <button class="btn btn-sm" onclick="previewTheme('${t.name}', this)" title="试听">▶ 试听</button>
-        ${!t.active ? `<button class="btn btn-sm btn-primary" onclick="switchTheme('${t.name}')">切换</button>` : `<span style="font-size:12px;color:var(--accent)">当前使用</span>`}
-        ${!t.builtin ? `<button class="btn btn-sm btn-danger" onclick="removeTheme('${t.name}', this)">删除</button>` : ""}
+        <button class="btn btn-sm" onclick="previewTheme('${th.name}', this)">${t("preview")}</button>
+        ${!th.active ? `<button class="btn btn-sm btn-primary" onclick="switchTheme('${th.name}')">${t("switchTheme")}</button>` : `<span style="font-size:12px;color:var(--accent)">${t("currentActive")}</span>`}
+        ${!th.builtin ? `<button class="btn btn-sm btn-danger" onclick="removeTheme('${th.name}', this)">${t("deleteTheme")}</button>` : ""}
       </div>
     </div>
   `).join("");
@@ -158,28 +213,28 @@ function renderThemes() {
 async function switchTheme(name) {
   await api("POST", "/api/theme", { name });
   state.status.theme = name;
-  state.themes.forEach(t => t.active = (t.name === name));
+  state.themes.forEach(th => th.active = (th.name === name));
   renderThemes();
   document.getElementById("current-theme").textContent = name;
-  toast(`主题已切换为: ${name}`);
+  toast(t("switchedTheme", name));
 }
 
 async function previewTheme(name, btn) {
   setLoading(btn, true);
   const res = await api("POST", "/api/theme/preview", { name, sound: "notification" });
   setLoading(btn, false);
-  if (!res.ok) toast(res.error || "试听失败", "error");
+  if (!res.ok) toast(res.error || t("previewFail"), "error");
 }
 
 async function removeTheme(name, btn) {
-  if (!confirm(`删除主题 "${name}"?`)) return;
+  if (!confirm(t("confirmDelete", name))) return;
   setLoading(btn, true);
   const res = await api("DELETE", `/api/theme/${name}`);
   if (res.ok) {
-    toast(`已删除: ${name}`);
+    toast(t("deletedTheme", name));
     await loadThemes();
   } else {
-    toast(res.error || "删除失败", "error");
+    toast(res.error || t("deleteFail"), "error");
     setLoading(btn, false);
   }
 }
@@ -205,20 +260,20 @@ function initUpload() {
 
 async function uploadFile(file) {
   if (!file.name.endsWith(".cstheme")) {
-    toast("只支持 .cstheme 文件", "error"); return;
+    toast(t("uploadWrongType"), "error"); return;
   }
   const zone = document.getElementById("upload-zone");
-  zone.innerHTML = '<div class="spin"></div> 安装中...';
+  zone.innerHTML = `<div class="spin"></div> ${t("uploadInstalling")}`;
   const fd = new FormData();
   fd.append("file", file);
   const res = await fetch("/api/theme/upload", { method: "POST", body: fd });
   const data = await res.json();
-  zone.innerHTML = `<div class="upload-icon">📦</div>拖拽或点击安装 .cstheme 文件`;
+  zone.innerHTML = `<div class="upload-icon">📦</div>${t("uploadHint")}`;
   if (data.ok) {
-    toast("主题安装成功");
+    toast(t("uploadSuccess"));
     await loadThemes();
   } else {
-    toast(data.error || "安装失败", "error");
+    toast(data.error || t("uploadFail"), "error");
   }
 }
 
@@ -227,7 +282,7 @@ async function uploadFile(file) {
 async function loadStore() {
   if (state.storeLoading) return;
   state.storeLoading = true;
-  document.getElementById("store-list").innerHTML = '<div class="loading"><span class="spin"></span>正在获取主题商店...</div>';
+  document.getElementById("store-list").innerHTML = `<div class="loading"><span class="spin"></span>${t("fetchingStore")}</div>`;
   const data = await api("GET", "/api/store");
   state.storeLoading = false;
   if (data.ok === false) {
@@ -241,20 +296,20 @@ async function loadStore() {
 function renderStore() {
   const container = document.getElementById("store-list");
   if (!state.store.length) {
-    container.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>商店暂无主题</div>';
+    container.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>${t("noStoreThemes")}</div>`;
     return;
   }
-  container.innerHTML = state.store.map(t => `
+  container.innerHTML = state.store.map(th => `
     <div class="store-item">
       <div class="store-info">
-        <div class="store-name">${t.display_name || t.name}</div>
-        <div class="store-desc">${t.description || ""}</div>
-        <div class="store-author">by ${t.author || "—"} · ${((t.size || 0) / 1024).toFixed(0)} KB</div>
+        <div class="store-name">${th.display_name || th.name}</div>
+        <div class="store-desc">${th.description || ""}</div>
+        <div class="store-author">by ${th.author || "—"} · ${((th.size || 0) / 1024).toFixed(0)} KB</div>
       </div>
       <div>
-        ${t.installed
-          ? `<span class="badge on"><span class="dot"></span>已安装</span>`
-          : `<button class="btn btn-primary btn-sm" onclick="installTheme('${t.name}', this)">安装</button>`
+        ${th.installed
+          ? `<span class="badge on"><span class="dot"></span>${t("installed")}</span>`
+          : `<button class="btn btn-primary btn-sm" onclick="installTheme('${th.name}', this)">${t("install")}</button>`
         }
       </div>
     </div>
@@ -265,13 +320,13 @@ async function installTheme(name, btn) {
   setLoading(btn, true);
   const res = await api("POST", "/api/store/install", { name });
   if (res.ok) {
-    toast(`${name} 安装成功`);
+    toast(t("installSuccess", name));
     state.store = null;
     state.storeLoading = false;
     await loadStore();
     if (state.activeTab === "themes") await loadThemes();
   } else {
-    toast(res.error || "安装失败", "error");
+    toast(res.error || t("installFail"), "error");
     setLoading(btn, false);
   }
 }
@@ -328,8 +383,8 @@ function renderProjectList() {
          onclick="selectProject('${p.path.replace(/'/g, "\\'")}')">
       <div class="proj-name">${p.name}</div>
       <div class="proj-path">${p.path}</div>
-      ${p.is_cwd ? '<div class="proj-badge">● 当前目录</div>' : ""}
-      ${p.theme  ? `<div class="proj-badge">主题: ${p.theme}</div>` : ""}
+      ${p.is_cwd ? `<div class="proj-badge">${t("currentDir")}</div>` : ""}
+      ${p.theme  ? `<div class="proj-badge">${t("themeLabel")}: ${p.theme}</div>` : ""}
     </div>
   `).join("");
 }
@@ -339,7 +394,7 @@ async function selectProject(path) {
   state.projectPath = path;
   renderProjectList();  // re-render to update active state
   document.getElementById("project-detail").innerHTML =
-    '<div class="loading"><span class="spin"></span>加载中...</div>';
+    `<div class="loading"><span class="spin"></span>${t("loading")}</div>`;
   const data = await api("GET", `/api/project?path=${encodeURIComponent(path)}`);
   renderProject(data);
 }
@@ -366,15 +421,15 @@ function renderProject(data) {
   document.getElementById("project-detail").innerHTML = `
     <div class="card">
       <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-        <span>主题</span>
-        <span style="font-size:11px;color:var(--text2);font-weight:400">全局: ${globalTheme}</span>
+        <span>${t("themeLabel")}</span>
+        <span style="font-size:11px;color:var(--text2);font-weight:400">${t("globalDefault")}: ${globalTheme}</span>
       </div>
       <div class="toggle">
-        <span>项目主题</span>
+        <span>${t("projectTheme")}</span>
         <select id="proj-theme-select" onchange="setProjectTheme(this.value)"
           style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;
                  padding:6px 10px;color:var(--text);font-size:13px;outline:none;cursor:pointer">
-          <option value="" ${!current ? "selected" : ""}>(使用全局)</option>
+          <option value="" ${!current ? "selected" : ""}>${t("useGlobal")}</option>
           ${themeOptions}
         </select>
       </div>
@@ -382,8 +437,8 @@ function renderProject(data) {
 
     <div class="card">
       <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-        <span>Hooks 覆盖</span>
-        ${exists ? `<button class="btn btn-sm btn-danger" onclick="clearProject()">清除项目配置</button>` : ""}
+        <span>${t("hooksOverride")}</span>
+        ${exists ? `<button class="btn btn-sm btn-danger" onclick="clearProject()">${t("clearConfig")}</button>` : ""}
       </div>
       ${Object.entries(hookDescs).map(([h, desc]) => {
         const hasOverride = h in hooks;
@@ -392,11 +447,11 @@ function renderProject(data) {
           <div class="toggle-label">
             <span>${h}</span>
             <span class="toggle-desc">${desc}${hasOverride
-              ? ` · <span style="color:var(--accent)">已覆盖</span>`
-              : " · 使用全局"}</span>
+              ? ` · <span style="color:var(--accent)">${t("overridden")}</span>`
+              : ` · ${t("usingGlobal")}`}</span>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
-            ${hasOverride ? `<button class="btn btn-sm" style="padding:3px 7px" onclick="clearProjectHook('${h}')" title="取消覆盖">✕</button>` : ""}
+            ${hasOverride ? `<button class="btn btn-sm" style="padding:3px 7px" onclick="clearProjectHook('${h}')" title="${t("overrideCleared", h)}">✕</button>` : ""}
             <label class="switch">
               <input type="checkbox" ${(hasOverride ? hooks[h] : true) !== false ? "checked" : ""}
                      onchange="setProjectHook('${h}', this.checked)">
@@ -418,7 +473,7 @@ async function setProjectTheme(name) {
   const path = getProjectPath();
   if (!path) return;
   await api("POST", "/api/project/theme", { path, name });
-  toast(name ? `项目主题已设为: ${name}` : "已恢复使用全局主题");
+  toast(name ? t("themeSet", name) : t("themeGlobal"));
   const data = await api("GET", `/api/project?path=${encodeURIComponent(path)}`);
   renderProject(data);
 }
@@ -436,7 +491,7 @@ async function clearProjectHook(hook) {
   const path = getProjectPath();
   if (!path) return;
   await api("POST", "/api/project/hook/clear", { path, hook });
-  toast(`${hook} 覆盖已取消`);
+  toast(t("overrideCleared", hook));
   const data = await api("GET", `/api/project?path=${encodeURIComponent(path)}`);
   renderProject(data);
 }
@@ -444,9 +499,9 @@ async function clearProjectHook(hook) {
 async function clearProject() {
   const path = getProjectPath();
   if (!path) return;
-  if (!confirm("清除项目配置？将回退到全局设置。")) return;
+  if (!confirm(t("confirmClear"))) return;
   await api("POST", "/api/project/clear", { path });
-  toast("项目配置已清除");
+  toast(t("configCleared"));
   // Remove from list
   state.projects = state.projects.filter(p => p.path !== path || p.is_cwd);
   const data = await api("GET", `/api/project?path=${encodeURIComponent(path)}`);
@@ -457,9 +512,9 @@ async function clearProject() {
 // ── Init ───────────────────────────────────────────────────────────────────────
 
 async function stopServer() {
-  if (!confirm("停止 Web UI 服务？")) return;
+  if (!confirm(t("confirmStop"))) return;
   await fetch("/api/shutdown", { method: "POST" }).catch(() => {});
-  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#888;font-family:sans-serif;flex-direction:column;gap:12px"><div style="font-size:32px">■</div><div>服务已停止</div><div style="font-size:12px">重新运行 /sounds:cs ui 启动</div></div>';
+  document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#888;font-family:sans-serif;flex-direction:column;gap:12px"><div style="font-size:32px">■</div><div>${t("stoppedMsg")}</div><div style="font-size:12px">${t("stoppedSub")}</div></div>`;
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -478,6 +533,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Project path input
   // project-path is now a hidden field, no listener needed
+
+  // Apply language
+  applyLang();
 
   // Load initial data
   await loadStatus();
