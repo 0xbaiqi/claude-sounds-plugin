@@ -1,0 +1,13 @@
+{
+  "name": "sounds",
+  "version": "1.0.0",
+  "description": "Play sounds on Claude Code events. Supports themes, per-project config, and a GitHub-based theme store.",
+  "author": {
+    "name": "0xbaiqi",
+    "url": "https://github.com/0xbaiqi"
+  },
+  "homepage": "https://github.com/0xbaiqi/claude-sounds-plugin",
+  "repository": "https://github.com/0xbaiqi/claude-sounds-plugin",
+  "license": "MIT",
+  "keywords": ["sounds", "audio", "notifications", "themes", "productivity", "hooks"]
+}
