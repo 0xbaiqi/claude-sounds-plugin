@@ -2,6 +2,14 @@
 
 让 Claude Code 在关键事件时播放提示音，支持主题切换、项目级配置和图形化管理界面。
 
+## 界面预览
+
+![状态页](assets/index.png)
+
+![主题管理](assets/themes.png)
+
+![主题商店](assets/shop.png)
+
 ## 功能
 
 - 任务完成、需要输入、工具调用时播放声音
