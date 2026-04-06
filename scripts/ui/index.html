@@ -12,7 +12,25 @@
   <!-- Header -->
   <header>
     <div class="logo">
-      <span class="logo-icon">🔊</span>
+      <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Rounded square background -->
+        <rect width="40" height="40" rx="10" fill="#1a1008"/>
+        <rect width="40" height="40" rx="10" fill="url(#grad)" opacity="0.15"/>
+        <!-- Equalizer bars - 5 bars with varying heights, bottom-aligned -->
+        <rect x="5"  y="22" width="4" height="12" rx="2" fill="#cc785c" opacity="0.5"/>
+        <rect x="11" y="14" width="4" height="20" rx="2" fill="#cc785c" opacity="0.75"/>
+        <rect x="17" y="8"  width="4" height="26" rx="2" fill="#e8956d"/>
+        <rect x="23" y="14" width="4" height="20" rx="2" fill="#cc785c" opacity="0.75"/>
+        <rect x="29" y="18" width="4" height="16" rx="2" fill="#cc785c" opacity="0.5"/>
+        <!-- Subtle top highlight -->
+        <rect width="40" height="1" rx="0.5" fill="white" opacity="0.06"/>
+        <defs>
+          <linearGradient id="grad" x1="0" y1="0" x2="40" y2="40">
+            <stop offset="0%" stop-color="#e8956d"/>
+            <stop offset="100%" stop-color="#cc785c"/>
+          </linearGradient>
+        </defs>
+      </svg>
       Claude Sounds
     </div>
     <div class="header-status">
@@ -47,6 +65,9 @@
       <div class="card">
         <div class="card-title">Hooks</div>
         <div id="hooks-list"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:4px">
+        <button class="btn btn-sm btn-danger" onclick="stopServer()">停止 Web UI 服务</button>
       </div>
     </div>
 
@@ -92,11 +113,12 @@
               <div class="loading"><span class="spin"></span></div>
             </div>
             <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-              <label class="btn" style="width:100%;justify-content:center;cursor:pointer;box-sizing:border-box">
-                📁 选择其他项目
-                <input type="file" id="folder-picker" webkitdirectory style="display:none"
-                       onchange="onFolderPick(this)">
-              </label>
+              <div style="display:flex;gap:6px">
+                <input id="manual-path" type="text" placeholder="粘贴项目路径" onkeydown="if(event.key==='Enter')addManualProject()"
+                  style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);
+                         border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px;outline:none">
+                <button class="btn btn-sm" onclick="addManualProject()">+</button>
+              </div>
             </div>
           </div>
         </div>

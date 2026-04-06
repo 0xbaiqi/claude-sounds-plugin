@@ -474,6 +474,11 @@ class Handler(BaseHTTPRequestHandler):
                 shutil.rmtree(CACHE_DIR, ignore_errors=True)
             self._ok(); return
 
+        if path == "/api/shutdown":
+            self._ok({"message": "Shutting down..."})
+            threading.Thread(target=self.server.shutdown, daemon=True).start()
+            return
+
         self._err("Not found", 404)
 
     def do_DELETE(self):

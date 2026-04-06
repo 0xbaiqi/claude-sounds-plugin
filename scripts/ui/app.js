@@ -288,24 +288,12 @@ function getProjectPath() {
   return document.getElementById("project-path").value || state.projectPath;
 }
 
-function onFolderPick(input) {
-  const files = input.files;
-  if (!files.length) return;
-  // Try to get absolute path (works in Electron/Claude Code's built-in browser)
-  let absPath = "";
-  for (const f of files) {
-    if (f.path) {
-      const rel  = f.webkitRelativePath || f.name;
-      const root = rel.split("/")[0];
-      absPath = f.path.substring(0, f.path.lastIndexOf(rel) + root.length);
-      break;
-    }
-  }
-  if (absPath) {
-    addAndSelectProject(absPath);
-  } else {
-    toast("浏览器限制：无法获取绝对路径", "error");
-  }
+function addManualProject() {
+  const input = document.getElementById("manual-path");
+  const path  = input.value.trim();
+  if (!path) return;
+  input.value = "";
+  addAndSelectProject(path);
 }
 
 function addAndSelectProject(path) {
@@ -468,6 +456,12 @@ async function clearProject() {
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 
+async function stopServer() {
+  if (!confirm("停止 Web UI 服务？")) return;
+  await fetch("/api/shutdown", { method: "POST" }).catch(() => {});
+  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#888;font-family:sans-serif;flex-direction:column;gap:12px"><div style="font-size:32px">■</div><div>服务已停止</div><div style="font-size:12px">重新运行 /sounds:cs ui 启动</div></div>';
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   // Tab clicks
   document.querySelectorAll(".tab").forEach(t =>
@@ -483,7 +477,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initUpload();
 
   // Project path input
-  document.getElementById("project-path").addEventListener("change", loadProject);
+  // project-path is now a hidden field, no listener needed
 
   // Load initial data
   await loadStatus();
