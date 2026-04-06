@@ -43,6 +43,7 @@ let state = {
   storeLoading: false,
   activeTab: "status",
   projectPath: window.PROJECT_PATH || "",
+  projects: [],
 };
 
 // ── Tab routing ────────────────────────────────────────────────────────────────
@@ -57,7 +58,10 @@ function showTab(name) {
   );
   if (name === "themes")  loadThemes();
   if (name === "store")   loadStore();
-  if (name === "project") loadProject();
+  if (name === "project") {
+    if (!state.themes.length) loadThemes().then(loadProjectTab);
+    else loadProjectTab();
+  }
 }
 
 // ── Status tab ─────────────────────────────────────────────────────────────────
@@ -143,6 +147,7 @@ function renderThemes() {
         ${t.builtin ? ' · <span style="color:var(--blue)">内置</span>' : ""}
       </div>
       <div class="theme-actions" onclick="event.stopPropagation()">
+        <button class="btn btn-sm" onclick="previewTheme('${t.name}', this)" title="试听">▶ 试听</button>
         ${!t.active ? `<button class="btn btn-sm btn-primary" onclick="switchTheme('${t.name}')">切换</button>` : `<span style="font-size:12px;color:var(--accent)">当前使用</span>`}
         ${!t.builtin ? `<button class="btn btn-sm btn-danger" onclick="removeTheme('${t.name}', this)">删除</button>` : ""}
       </div>
@@ -157,6 +162,13 @@ async function switchTheme(name) {
   renderThemes();
   document.getElementById("current-theme").textContent = name;
   toast(`主题已切换为: ${name}`);
+}
+
+async function previewTheme(name, btn) {
+  setLoading(btn, true);
+  const res = await api("POST", "/api/theme/preview", { name, sound: "notification" });
+  setLoading(btn, false);
+  if (!res.ok) toast(res.error || "试听失败", "error");
 }
 
 async function removeTheme(name, btn) {
@@ -272,81 +284,186 @@ function refreshStore() {
 
 // ── Project tab ────────────────────────────────────────────────────────────────
 
-async function loadProject() {
-  const path = document.getElementById("project-path").value || state.projectPath;
-  if (!path) return;
+function getProjectPath() {
+  return document.getElementById("project-path").value || state.projectPath;
+}
+
+function onFolderPick(input) {
+  const files = input.files;
+  if (!files.length) return;
+  // Try to get absolute path (works in Electron/Claude Code's built-in browser)
+  let absPath = "";
+  for (const f of files) {
+    if (f.path) {
+      const rel  = f.webkitRelativePath || f.name;
+      const root = rel.split("/")[0];
+      absPath = f.path.substring(0, f.path.lastIndexOf(rel) + root.length);
+      break;
+    }
+  }
+  if (absPath) {
+    addAndSelectProject(absPath);
+  } else {
+    toast("浏览器限制：无法获取绝对路径", "error");
+  }
+}
+
+function addAndSelectProject(path) {
+  const name = path.split("/").pop() || path;
+  // Add to list if not present
+  if (!state.projects.find(p => p.path === path)) {
+    state.projects.unshift({ path, name, theme: "", hooks: {}, no_config: true });
+  }
+  renderProjectList();
+  selectProject(path);
+}
+
+async function loadProjectTab() {
+  document.getElementById("project-list").innerHTML =
+    '<div class="loading"><span class="spin"></span></div>';
+  const data = await api("GET", "/api/projects");
+  state.projects = data.projects || [];
+  renderProjectList();
+  // Auto-select cwd
+  const cwd = state.projects.find(p => p.is_cwd);
+  if (cwd) selectProject(cwd.path);
+}
+
+function renderProjectList() {
+  const list = document.getElementById("project-list");
+  if (!state.projects.length) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px 0">暂无已配置项目</div>';
+    return;
+  }
+  list.innerHTML = state.projects.map(p => `
+    <div class="proj-item ${p.path === getProjectPath() ? "active" : ""}"
+         onclick="selectProject('${p.path.replace(/'/g, "\\'")}')">
+      <div class="proj-name">${p.name}</div>
+      <div class="proj-path">${p.path}</div>
+      ${p.is_cwd ? '<div class="proj-badge">● 当前目录</div>' : ""}
+      ${p.theme  ? `<div class="proj-badge">主题: ${p.theme}</div>` : ""}
+    </div>
+  `).join("");
+}
+
+async function selectProject(path) {
+  document.getElementById("project-path").value = path;
+  state.projectPath = path;
+  renderProjectList();  // re-render to update active state
+  document.getElementById("project-detail").innerHTML =
+    '<div class="loading"><span class="spin"></span>加载中...</div>';
   const data = await api("GET", `/api/project?path=${encodeURIComponent(path)}`);
   renderProject(data);
 }
 
 function renderProject(data) {
-  const cfg = data.config || {};
+  const cfg    = data.config || {};
   const exists = data.exists;
 
-  document.getElementById("project-config-path").textContent = data.path || "";
+  const hookDescs = {
+    stop:         "任务完成时播放",
+    notification: "需要输入时播放",
+    error:        "出错时播放",
+    permission:   "工具调用前播放",
+  };
+  const hooks      = cfg.hooks || {};
+  const themes     = state.themes.length ? state.themes : [];
+  const current    = cfg.theme || "";
+  const globalTheme = state.status?.theme || "default";
 
-  if (!exists) {
-    document.getElementById("project-detail").innerHTML =
-      '<div class="empty"><div class="empty-icon">📂</div>当前项目无独立配置，使用全局设置</div>';
-    document.getElementById("btn-project-clear").style.display = "none";
-    return;
-  }
+  const themeOptions = themes.map(t =>
+    `<option value="${t.name}" ${t.name === current ? "selected" : ""}>${t.display_name || t.name}${t.builtin ? " (内置)" : ""}</option>`
+  ).join("");
 
-  document.getElementById("btn-project-clear").style.display = "";
-
-  const hooks = cfg.hooks || {};
-  const hookDescs = { stop: "stop", notification: "notification", error: "error", permission: "permission" };
   document.getElementById("project-detail").innerHTML = `
     <div class="card">
-      <div class="card-title">项目主题</div>
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>主题</span>
+        <span style="font-size:11px;color:var(--text2);font-weight:400">全局: ${globalTheme}</span>
+      </div>
       <div class="toggle">
-        <span>当前主题</span>
-        <span style="color:var(--accent)">${cfg.theme || "(使用全局)"}</span>
+        <span>项目主题</span>
+        <select id="proj-theme-select" onchange="setProjectTheme(this.value)"
+          style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+                 padding:6px 10px;color:var(--text);font-size:13px;outline:none;cursor:pointer">
+          <option value="" ${!current ? "selected" : ""}>(使用全局)</option>
+          ${themeOptions}
+        </select>
       </div>
     </div>
+
     <div class="card">
-      <div class="card-title">项目 Hooks 覆盖</div>
-      ${Object.keys(hookDescs).map(h => {
-        const override = h in hooks;
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Hooks 覆盖</span>
+        ${exists ? `<button class="btn btn-sm btn-danger" onclick="clearProject()">清除项目配置</button>` : ""}
+      </div>
+      ${Object.entries(hookDescs).map(([h, desc]) => {
+        const hasOverride = h in hooks;
         return `
         <div class="toggle">
           <div class="toggle-label">
             <span>${h}</span>
-            <span class="toggle-desc">${override ? "项目覆盖" : "使用全局设置"}</span>
+            <span class="toggle-desc">${desc}${hasOverride
+              ? ` · <span style="color:var(--accent)">已覆盖</span>`
+              : " · 使用全局"}</span>
           </div>
-          <label class="switch">
-            <input type="checkbox" ${hooks[h] !== false ? "checked" : ""}
-                   onchange="setProjectHook('${h}', this.checked)">
-            <span class="slider"></span>
-          </label>
+          <div style="display:flex;gap:8px;align-items:center">
+            ${hasOverride ? `<button class="btn btn-sm" style="padding:3px 7px" onclick="clearProjectHook('${h}')" title="取消覆盖">✕</button>` : ""}
+            <label class="switch">
+              <input type="checkbox" ${(hasOverride ? hooks[h] : true) !== false ? "checked" : ""}
+                     onchange="setProjectHook('${h}', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
         </div>`;
       }).join("")}
     </div>
   `;
+
+  // Sync project list entry
+  const proj = state.projects.find(p => p.path === getProjectPath());
+  if (proj) { proj.theme = current; proj.no_config = !exists; }
+  renderProjectList();
 }
 
 async function setProjectTheme(name) {
-  const path = document.getElementById("project-path").value || state.projectPath;
-  if (!name || !path) return;
+  const path = getProjectPath();
+  if (!path) return;
   await api("POST", "/api/project/theme", { path, name });
-  toast(`项目主题已设为: ${name}`);
-  await loadProject();
+  toast(name ? `项目主题已设为: ${name}` : "已恢复使用全局主题");
+  const data = await api("GET", `/api/project?path=${encodeURIComponent(path)}`);
+  renderProject(data);
 }
 
 async function setProjectHook(hook, val) {
-  const path = document.getElementById("project-path").value || state.projectPath;
+  const path = getProjectPath();
   if (!path) return;
   await api("POST", "/api/project/hook", { path, hook, enabled: val });
   toast(`项目 ${hook} ${val ? "已开启" : "已关闭"}`);
+  const data = await api("GET", `/api/project?path=${encodeURIComponent(path)}`);
+  renderProject(data);
+}
+
+async function clearProjectHook(hook) {
+  const path = getProjectPath();
+  if (!path) return;
+  await api("POST", "/api/project/hook/clear", { path, hook });
+  toast(`${hook} 覆盖已取消`);
+  const data = await api("GET", `/api/project?path=${encodeURIComponent(path)}`);
+  renderProject(data);
 }
 
 async function clearProject() {
-  const path = document.getElementById("project-path").value || state.projectPath;
+  const path = getProjectPath();
   if (!path) return;
   if (!confirm("清除项目配置？将回退到全局设置。")) return;
   await api("POST", "/api/project/clear", { path });
   toast("项目配置已清除");
-  await loadProject();
+  // Remove from list
+  state.projects = state.projects.filter(p => p.path !== path || p.is_cwd);
+  const data = await api("GET", `/api/project?path=${encodeURIComponent(path)}`);
+  renderProject(data);
+  renderProjectList();
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────────
@@ -370,5 +487,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Load initial data
   await loadStatus();
+  // Pre-fill project path with server's cwd
+  const cwdData = await api("GET", "/api/cwd");
+  if (cwdData.cwd) {
+    state.projectPath = cwdData.cwd;
+    document.getElementById("project-path").value = cwdData.cwd;
+  }
   showTab("status");
 });

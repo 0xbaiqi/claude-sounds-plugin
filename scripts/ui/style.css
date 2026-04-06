@@ -271,3 +271,23 @@ input:checked + .slider::before { transform: translateX(18px); background: #fff;
 
 /* ── Loading overlay ── */
 .loading { display: flex; align-items: center; gap: 10px; color: var(--text2); padding: 20px 0; }
+
+/* ── Project list ── */
+.proj-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .12s;
+  margin-bottom: 2px;
+}
+.proj-item:hover { background: var(--bg3); }
+.proj-item.active { background: var(--accent); }
+.proj-item.active .proj-name, .proj-item.active .proj-path { color: #fff; }
+.proj-name { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proj-path { font-size: 10px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proj-item.active .proj-path { color: rgba(255,255,255,.7); }
+.proj-badge { font-size: 10px; color: var(--accent); margin-top:1px; }
+.proj-item.active .proj-badge { color: rgba(255,255,255,.8); }

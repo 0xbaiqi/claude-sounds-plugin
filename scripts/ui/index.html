@@ -58,12 +58,12 @@
       </div>
 
       <div class="section-title">安装本地主题</div>
-      <label class="upload-zone" id="upload-zone">
-        <input type="file" id="upload-input" accept=".cstheme">
+      <input type="file" id="upload-input" accept=".cstheme" style="display:none">
+      <div class="upload-zone" id="upload-zone">
         <div class="upload-icon">📦</div>
         <div>拖拽或点击安装 .cstheme 文件</div>
         <div style="font-size:12px;margin-top:4px;color:var(--text2)">支持本地打包的主题包</div>
-      </label>
+      </div>
     </div>
 
     <!-- Store tab -->
@@ -81,30 +81,36 @@
 
     <!-- Project tab -->
     <div id="tab-project" class="tab-pane" style="display:none">
-      <div class="card">
-        <div class="card-title">项目路径</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input id="project-path" type="text" placeholder="输入项目路径（留空使用当前目录）"
-            style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;
-                   padding:8px 12px;color:var(--text);font-size:13px;outline:none">
-          <button class="btn" onclick="loadProject()">加载</button>
+      <input type="hidden" id="project-path">
+      <div style="display:flex;gap:16px;align-items:flex-start">
+
+        <!-- Left: project list -->
+        <div style="width:220px;flex-shrink:0">
+          <div class="card" style="padding:12px">
+            <div class="card-title" style="margin-bottom:10px">项目列表</div>
+            <div id="project-list">
+              <div class="loading"><span class="spin"></span></div>
+            </div>
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+              <label class="btn" style="width:100%;justify-content:center;cursor:pointer;box-sizing:border-box">
+                📁 选择其他项目
+                <input type="file" id="folder-picker" webkitdirectory style="display:none"
+                       onchange="onFolderPick(this)">
+              </label>
+            </div>
+          </div>
         </div>
-        <div style="margin-top:8px;font-size:12px;color:var(--text2)" id="project-config-path"></div>
-      </div>
 
-      <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center">
-        <span style="font-size:13px;color:var(--text2)">切换项目主题：</span>
-        <input id="project-theme-input" type="text" placeholder="主题名称"
-          style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;
-                 padding:6px 10px;color:var(--text);font-size:13px;outline:none;width:150px">
-        <button class="btn btn-primary btn-sm"
-                onclick="setProjectTheme(document.getElementById('project-theme-input').value)">设置</button>
-        <button class="btn btn-sm btn-danger" id="btn-project-clear"
-                onclick="clearProject()" style="display:none;margin-left:auto">清除项目配置</button>
-      </div>
+        <!-- Right: config detail -->
+        <div style="flex:1;min-width:0">
+          <div id="project-detail">
+            <div class="empty" style="margin-top:40px">
+              <div class="empty-icon">👈</div>
+              从左侧选择一个项目
+            </div>
+          </div>
+        </div>
 
-      <div id="project-detail">
-        <div class="empty"><div class="empty-icon">📂</div>加载中...</div>
       </div>
     </div>
 

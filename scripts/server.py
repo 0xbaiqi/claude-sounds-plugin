@@ -73,6 +73,13 @@ def _write_project_config(project_path, data):
     with open(p, "w") as f:
         json.dump(data, f, indent=2)
         f.write("\n")
+    # Register project path in global config
+    cfg = _read_config()
+    projects = cfg.get("projects", [])
+    if project_path not in projects:
+        projects.append(project_path)
+        cfg["projects"] = projects
+        _write_config(cfg)
 
 # ── Theme helpers ──────────────────────────────────────────────────────────────
 
@@ -200,11 +207,44 @@ class Handler(BaseHTTPRequestHandler):
                 self._err(str(e))
             return
 
+        if path == "/api/cwd":
+            self._ok({"cwd": os.getcwd()}); return
+
+        if path == "/api/projects":
+            cfg = _read_config()
+            cwd = str(Path(os.getcwd()))
+            known = cfg.get("projects", [])
+            # Always include cwd
+            if cwd not in known:
+                known = [cwd] + known
+            projects = []
+            for proj_path in known:
+                p = Path(proj_path)
+                p_cfg = p / ".claude" / "sounds.json"
+                entry = {
+                    "path": proj_path,
+                    "name": p.name,
+                    "is_cwd": proj_path == cwd,
+                    "theme": "",
+                    "hooks": {},
+                    "no_config": not p_cfg.exists(),
+                }
+                if p_cfg.exists():
+                    try:
+                        with open(p_cfg) as f:
+                            proj_cfg = json.load(f)
+                        entry["theme"] = proj_cfg.get("theme", "")
+                        entry["hooks"] = proj_cfg.get("hooks", {})
+                    except Exception:
+                        pass
+                projects.append(entry)
+            self._ok({"projects": projects}); return
+
         if path == "/api/project":
             project = qs.get("path", [os.getcwd()])[0]
             data = _read_project_config(project)
             p = Path(project) / ".claude" / "sounds.json"
-            self._ok({"config": data, "exists": p.exists(), "path": str(p)}); return
+            self._ok({"config": data, "exists": p.exists(), "path": str(p), "project": project}); return
 
         self._err("Not found", 404)
 
@@ -333,10 +373,11 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/project/theme":
             project = body.get("path", os.getcwd())
             name    = body.get("name", "")
-            if not name:
-                self._err("name required"); return
             data = _read_project_config(project)
-            data["theme"] = name
+            if name:
+                data["theme"] = name
+            else:
+                data.pop("theme", None)
             _write_project_config(project, data)
             self._ok(); return
 
@@ -351,11 +392,77 @@ class Handler(BaseHTTPRequestHandler):
             _write_project_config(project, data)
             self._ok(); return
 
+        if path == "/api/project/hook/clear":
+            project = body.get("path", os.getcwd())
+            hook    = body.get("hook", "")
+            if hook not in VALID_HOOKS:
+                self._err(f"Unknown hook: {hook}"); return
+            data = _read_project_config(project)
+            data.get("hooks", {}).pop(hook, None)
+            if not data.get("hooks"):
+                data.pop("hooks", None)
+            _write_project_config(project, data)
+            self._ok(); return
+
         if path == "/api/project/clear":
             project = body.get("path", os.getcwd())
             p = Path(project) / ".claude" / "sounds.json"
             if p.exists():
                 p.unlink()
+            self._ok(); return
+
+        # ── Preview theme sound
+        if path == "/api/theme/preview":
+            name  = body.get("name", "")
+            sound = body.get("sound", "notification")
+            if not name:
+                self._err("name required"); return
+            # Resolve .cstheme file
+            theme_file = THEMES_DIR / f"{name}.cstheme"
+            if not theme_file.exists():
+                theme_file = PLUGIN_ROOT / "themes" / f"{name}.cstheme"
+            if not theme_file.exists():
+                self._err(f"Theme '{name}' not found"); return
+            # Extract to cache if needed
+            cache_dir    = CACHE_DIR / name
+            cache_marker = cache_dir / ".cached"
+            need_refresh = (not cache_marker.exists() or
+                            theme_file.stat().st_mtime > cache_marker.stat().st_mtime)
+            if need_refresh:
+                cache_dir.mkdir(parents=True, exist_ok=True)
+                subprocess.run(
+                    [sys.executable, str(CSTHEME_PY), "extract", str(theme_file), str(cache_dir)],
+                    check=True
+                )
+                cache_marker.touch()
+            sound_file = cache_dir / f"{sound}.mp3"
+            if not sound_file.exists():
+                self._err(f"{sound}.mp3 not found in theme"); return
+            # Play asynchronously
+            import platform
+            system = platform.system()
+            try:
+                if system == "Darwin":
+                    subprocess.Popen(["afplay", str(sound_file)],
+                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                elif system == "Windows":
+                    subprocess.Popen(
+                        ["powershell", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden",
+                         "-Command",
+                         f"Add-Type -AssemblyName PresentationCore; "
+                         f"$m=[System.Windows.Media.MediaPlayer]::new(); "
+                         f"$m.Open([Uri]::new('file:///{str(sound_file)}')); "
+                         f"$m.Play(); Start-Sleep 5"],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                else:
+                    if shutil.which("paplay"):
+                        subprocess.Popen(["paplay", str(sound_file)],
+                                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    elif shutil.which("aplay"):
+                        subprocess.Popen(["aplay", str(sound_file)],
+                                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception as e:
+                self._err(str(e)); return
             self._ok(); return
 
         # ── Cache clear

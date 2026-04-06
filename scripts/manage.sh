@@ -402,6 +402,20 @@ except Exception:
         mkdir -p "${PWD}/.claude"
         echo "${data}" | python3 -c "import json,sys; json.dump(json.load(sys.stdin), open('${project_config}','w'), indent=2)" 2>/dev/null
         python3 -c "open('${project_config}','a').write('\n')" 2>/dev/null
+        # Register project path in global config
+        python3 - "${CONFIG_FILE}" "${PWD}" << 'PYEOF'
+import json, sys
+cfg_path, proj_path = sys.argv[1], sys.argv[2]
+with open(cfg_path) as f:
+    cfg = json.load(f)
+projects = cfg.get("projects", [])
+if proj_path not in projects:
+    projects.append(proj_path)
+    cfg["projects"] = projects
+    with open(cfg_path, "w") as f:
+        json.dump(cfg, f, indent=2)
+        f.write("\n")
+PYEOF
     }
 
     case "${action}" in
