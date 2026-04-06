@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Sounds</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <span class="logo-icon">🔊</span>
+      Claude Sounds
+    </div>
+    <div class="header-status">
+      <span id="header-badge" class="badge off"><span class="dot"></span>加载中</span>
+      <label class="switch" title="启用/禁用插件">
+        <input type="checkbox" id="plugin-enabled">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </header>
+
+  <!-- Nav -->
+  <nav>
+    <div class="tab active" data-tab="status">状态</div>
+    <div class="tab" data-tab="themes">主题</div>
+    <div class="tab" data-tab="store">商店</div>
+    <div class="tab" data-tab="project">项目配置</div>
+  </nav>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Status tab -->
+    <div id="tab-status" class="tab-pane">
+      <div class="card">
+        <div class="card-title">当前主题</div>
+        <div class="toggle">
+          <span>全局主题</span>
+          <span id="current-theme" style="color:var(--accent);font-weight:600">—</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Hooks</div>
+        <div id="hooks-list"></div>
+      </div>
+    </div>
+
+    <!-- Themes tab -->
+    <div id="tab-themes" class="tab-pane" style="display:none">
+      <div class="section-title">已安装主题</div>
+      <div id="themes-grid" class="theme-grid">
+        <div class="loading"><span class="spin"></span>加载中...</div>
+      </div>
+
+      <div class="section-title">安装本地主题</div>
+      <label class="upload-zone" id="upload-zone">
+        <input type="file" id="upload-input" accept=".cstheme">
+        <div class="upload-icon">📦</div>
+        <div>拖拽或点击安装 .cstheme 文件</div>
+        <div style="font-size:12px;margin-top:4px;color:var(--text2)">支持本地打包的主题包</div>
+      </label>
+    </div>
+
+    <!-- Store tab -->
+    <div id="tab-store" class="tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="color:var(--text2);font-size:13px">从 GitHub 主题商店浏览和安装主题</div>
+        <button class="btn btn-sm" onclick="refreshStore()">↻ 刷新</button>
+      </div>
+      <div class="card">
+        <div id="store-list">
+          <div class="loading"><span class="spin"></span>正在获取主题商店...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Project tab -->
+    <div id="tab-project" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-title">项目路径</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="project-path" type="text" placeholder="输入项目路径（留空使用当前目录）"
+            style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+                   padding:8px 12px;color:var(--text);font-size:13px;outline:none">
+          <button class="btn" onclick="loadProject()">加载</button>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:var(--text2)" id="project-config-path"></div>
+      </div>
+
+      <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center">
+        <span style="font-size:13px;color:var(--text2)">切换项目主题：</span>
+        <input id="project-theme-input" type="text" placeholder="主题名称"
+          style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+                 padding:6px 10px;color:var(--text);font-size:13px;outline:none;width:150px">
+        <button class="btn btn-primary btn-sm"
+                onclick="setProjectTheme(document.getElementById('project-theme-input').value)">设置</button>
+        <button class="btn btn-sm btn-danger" id="btn-project-clear"
+                onclick="clearProject()" style="display:none;margin-left:auto">清除项目配置</button>
+      </div>
+
+      <div id="project-detail">
+        <div class="empty"><div class="empty-icon">📂</div>加载中...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>

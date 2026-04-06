@@ -473,6 +473,14 @@ for h in valid:
     esac
 }
 
+cmd_ui() {
+    _init_config
+    local port="${1:-52437}"
+    export CLAUDE_PLUGIN_ROOT="${PLUGIN_ROOT}"
+    echo "启动 Web UI: http://localhost:${port}"
+    python3 "${PLUGIN_ROOT}/scripts/server.py" "${port}" "${PLUGIN_ROOT}"
+}
+
 cmd_test() {
     _init_config
     local event="${1:-}"
@@ -553,6 +561,10 @@ cmd_help() {
     echo "  配置文件：<项目根>/.claude/sounds.json"
     echo "  优先级：项目配置 > 全局配置 > 内置默认"
     echo ""
+    echo "── 图形界面 ────────────────────────────────────────"
+    echo "  /sounds:cs ui            打开 Web UI（自动启动浏览器）"
+    echo "  /sounds:cs ui 8080       指定端口"
+    echo ""
     echo "── 测试声音 ────────────────────────────────────────"
     echo "  /sounds:cs test              依次测试所有声音"
     echo "  /sounds:cs test stop         只测试 stop 声音"
@@ -574,6 +586,7 @@ case "${CMD}" in
     hook)            cmd_hook "$@" ;;
     theme)           cmd_theme "$@" ;;
     project)         cmd_project "$@" ;;
+    ui)              cmd_ui "$@" ;;
     test)            cmd_test "$@" ;;
     *)               echo "Unknown command: ${CMD}"; echo ""; cmd_help; exit 1 ;;
 esac
