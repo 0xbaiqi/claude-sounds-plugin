@@ -477,6 +477,7 @@ cmd_test() {
     _init_config
     local event="${1:-}"
     export CLAUDE_PLUGIN_ROOT="${PLUGIN_ROOT}"
+    export CLAUDE_SOUNDS_FORCE=1
     if [ -n "${event}" ]; then
         echo "Testing: ${event}"
         bash "${PLAY_SH}" "${event}"

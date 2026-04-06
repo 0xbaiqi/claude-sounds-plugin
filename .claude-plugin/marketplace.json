@@ -1,0 +1,26 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "sounds",
+  "description": "Play sounds on Claude Code events. Supports themes, per-project config, and a GitHub-based theme store.",
+  "owner": {
+    "name": "0xbaiqi"
+  },
+  "plugins": [
+    {
+      "name": "sounds",
+      "source": "./",
+      "description": "Play sounds on Claude Code events. Supports themes, per-project config, and a GitHub-based theme store.",
+      "version": "1.0.0",
+      "author": {
+        "name": "0xbaiqi"
+      },
+      "homepage": "https://github.com/0xbaiqi/claude-sounds-plugin",
+      "repository": "https://github.com/0xbaiqi/claude-sounds-plugin",
+      "license": "MIT",
+      "keywords": ["sounds", "audio", "notifications", "themes", "productivity", "hooks"],
+      "category": "workflow",
+      "tags": ["sounds", "audio", "notifications", "themes"],
+      "strict": false
+    }
+  ]
+}

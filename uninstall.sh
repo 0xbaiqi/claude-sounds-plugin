@@ -1,49 +1,28 @@
 #!/usr/bin/env bash
+# Claude Sounds Plugin - Uninstaller
 set -euo pipefail
 
-PLUGINS_DIR="${HOME}/.claude/plugins"
-INSTALL_LINK="${PLUGINS_DIR}/claude-sounds"
-INSTALLED_JSON="${PLUGINS_DIR}/installed_plugins.json"
-PLUGIN_KEY="claude-sounds@local"
 USER_DIR="${HOME}/.claude/claude-sounds-xapipro"
 
 echo "Claude Sounds Plugin - Uninstaller"
 echo ""
 
-# ── 1. Remove from installed_plugins.json ────────────────────────────────────
+# ── 1. Uninstall plugin ───────────────────────────────────────────────────────
 
-if [ -f "${INSTALLED_JSON}" ]; then
-    python3 - "${INSTALLED_JSON}" "${PLUGIN_KEY}" << 'PYEOF'
-import json, sys
-path, key = sys.argv[1], sys.argv[2]
-with open(path) as f:
-    data = json.load(f)
-if key in data.get("plugins", {}):
-    del data["plugins"][key]
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
-    print(f"Removed: {key}")
-else:
-    print(f"Not found: {key}")
-PYEOF
-else
-    echo "installed_plugins.json not found, skipping"
-fi
+echo "Uninstalling plugin..."
+claude plugin uninstall sounds 2>/dev/null && echo "Plugin removed." || echo "Plugin not found (already uninstalled?)."
 
-# ── 2. Remove symlink ─────────────────────────────────────────────────────────
+# ── 2. Remove marketplace ─────────────────────────────────────────────────────
 
-if [ -L "${INSTALL_LINK}" ]; then
-    rm "${INSTALL_LINK}"
-    echo "Removed symlink: ${INSTALL_LINK}"
-fi
+echo "Removing marketplace..."
+claude plugin marketplace remove sounds 2>/dev/null && echo "Marketplace removed." || echo "Marketplace not found."
 
 # ── 3. Optionally remove user config ─────────────────────────────────────────
 
-echo ""
 if [ -d "${USER_DIR}" ]; then
-    read -r -p "Remove user config & themes at ${USER_DIR}? [y/N]: " confirm
-    if [[ "${confirm}" =~ ^[Yy]$ ]]; then
+    echo ""
+    read -r -p "Remove user config and installed themes? [y/N]: " confirm
+    if [[ "${confirm:-N}" =~ ^[Yy]$ ]]; then
         rm -rf "${USER_DIR}"
         echo "Removed: ${USER_DIR}"
     else
@@ -52,4 +31,4 @@ if [ -d "${USER_DIR}" ]; then
 fi
 
 echo ""
-echo "Done. Restart Claude Code to deactivate the plugin."
+echo "Done. Restart Claude Code to apply changes."

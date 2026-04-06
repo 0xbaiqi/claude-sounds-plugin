@@ -30,9 +30,10 @@ except Exception:
 
 # ── Guards ────────────────────────────────────────────────────────────────────
 
-[ "$(_cfg_global enabled true)" = "false" ] && exit 0
+if [ "${CLAUDE_SOUNDS_FORCE:-0}" != "1" ]; then
+    [ "$(_cfg_global enabled true)" = "false" ] && exit 0
 
-_hook_enabled=$(python3 -c "
+    _hook_enabled=$(python3 -c "
 import json
 try:
     with open('${PROJECT_CONFIG}') as f:
@@ -50,7 +51,8 @@ try:
 except Exception:
     print('true')
 " 2>/dev/null || echo "true")
-[ "${_hook_enabled}" = "false" ] && exit 0
+    [ "${_hook_enabled}" = "false" ] && exit 0
+fi
 
 # ── Resolve theme ─────────────────────────────────────────────────────────────
 # Priority: project config → global config → default
