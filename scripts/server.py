@@ -522,6 +522,28 @@ def _open_browser(url):
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 
+def _is_our_server(port):
+    """Check if our server is already running on this port."""
+    try:
+        import urllib.request
+        with urllib.request.urlopen(f"http://localhost:{port}/api/status", timeout=2) as r:
+            data = json.loads(r.read())
+            return data.get("ok") is True
+    except Exception:
+        return False
+
+def _find_free_port(start, attempts=10):
+    """Find a free port starting from `start`."""
+    import socket
+    for port in range(start, start + attempts):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("127.0.0.1", port))
+                return port
+            except OSError:
+                continue
+    return None
+
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 52437
     if len(sys.argv) > 2:
@@ -529,8 +551,24 @@ if __name__ == "__main__":
 
     _init_config()
 
-    server = HTTPServer(("127.0.0.1", port), Handler)
-    url = f"http://localhost:{port}"
+    # If our server is already running on the requested port, just open browser
+    if _is_our_server(port):
+        url = f"http://localhost:{port}"
+        print(f"Claude Sounds UI already running → {url}")
+        _open_browser(url)
+        sys.exit(0)
+
+    # Find a free port
+    free_port = _find_free_port(port)
+    if free_port is None:
+        print(f"Error: No free port found in range {port}-{port+9}", file=sys.stderr)
+        sys.exit(1)
+
+    if free_port != port:
+        print(f"Port {port} is in use, using {free_port} instead.")
+
+    server = HTTPServer(("127.0.0.1", free_port), Handler)
+    url = f"http://localhost:{free_port}"
     print(f"Claude Sounds UI → {url}")
     print("Press Ctrl+C to stop.")
 
