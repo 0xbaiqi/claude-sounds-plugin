@@ -1,3 +1,4 @@
 .claude/
+CLAUDE.md
 scripts/__pycache__/
 *.pyc
