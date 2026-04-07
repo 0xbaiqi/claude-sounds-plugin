@@ -30,7 +30,7 @@ _init_config() {
     "notification": true,
     "error": true,
     "permission": false,
-    "permission_request": false
+    "permission_request": true
   }
 }
 EOF
@@ -532,7 +532,7 @@ cmd_help() {
     echo "    notification input needed / 需要你输入时播放"
     echo "    error        error occurred / 出错时播放"
     echo "    permission         before every tool call (off by default) / 工具调用前（默认关闭）"
-    echo "    permission_request when permission dialog appears (off by default) / 权限弹框出现时（默认关闭）"
+    echo "    permission_request when permission dialog appears / 权限弹框出现时"
     echo ""
     echo "  /sounds:cs hook enable stop        Turn on stop sound / 开启 stop 声音"
     echo "  /sounds:cs hook disable stop       Turn off stop sound / 关闭 stop 声音"
