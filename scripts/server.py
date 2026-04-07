@@ -26,7 +26,8 @@ THEMES_DIR   = USER_DIR / "themes"
 CACHE_DIR    = USER_DIR / "cache"
 CSTHEME_PY   = SCRIPT_DIR / "cstheme.py"
 UI_DIR       = SCRIPT_DIR / "ui"
-VALID_HOOKS  = ["stop", "notification", "error", "permission"]
+VALID_HOOKS     = ["stop", "notification", "error", "permission", "permission_request"]
+PLUGIN_VERSION  = "1.1.0"
 
 # ── Load cstheme module ────────────────────────────────────────────────────────
 
@@ -40,7 +41,7 @@ DEFAULT_CONFIG = {
     "theme": "default",
     "enabled": True,
     "store_url": "https://raw.githubusercontent.com/0xbaiqi/claude-sounds-themes/main",
-    "hooks": {"stop": True, "notification": True, "error": True, "permission": False}
+    "hooks": {"stop": True, "notification": True, "error": True, "permission": False, "permission_request": False}
 }
 
 def _init_config():
@@ -185,6 +186,7 @@ class Handler(BaseHTTPRequestHandler):
                 "theme":     cfg.get("theme", "default"),
                 "store_url": cfg.get("store_url", DEFAULT_CONFIG["store_url"]),
                 "hooks":     cfg.get("hooks", DEFAULT_CONFIG["hooks"]),
+                "version":   PLUGIN_VERSION,
             }); return
 
         if path == "/api/themes":
