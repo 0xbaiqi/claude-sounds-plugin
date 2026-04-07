@@ -27,7 +27,7 @@ const LANGS = {
     hookNotification:  "需要输入时播放",
     hookError:         "出错时播放",
     hookPermission:        "工具调用前播放（默认关闭）",
-    hookPermissionRequest: "权限弹框出现时播放（默认关闭）",
+    hookPermissionRequest: "权限弹框出现时播放",
     hookOn:            "已开启",
     hookOff:           "已关闭",
 
@@ -114,7 +114,7 @@ const LANGS = {
     hookNotification:  "Play when input needed",
     hookError:         "Play on error",
     hookPermission:        "Play before tool use (off by default)",
-    hookPermissionRequest: "Play when permission dialog appears (off by default)",
+    hookPermissionRequest: "Play when permission dialog appears",
     hookOn:            "enabled",
     hookOff:           "disabled",
 

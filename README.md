@@ -29,7 +29,7 @@ Play audio on Claude Code events — task done, input needed, tool calls, errors
 | Notification | Input needed | ✅ On |
 | Error | Error occurred | ✅ On |
 | Permission | Before every tool call | ❌ Off |
-| PermissionRequest | When permission dialog appears (v2.0.45+) | ❌ Off |
+| PermissionRequest | When permission dialog appears (v2.0.45+) | ✅ On |
 
 ## Installation / 安装
 

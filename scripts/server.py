@@ -41,7 +41,7 @@ DEFAULT_CONFIG = {
     "theme": "default",
     "enabled": True,
     "store_url": "https://raw.githubusercontent.com/0xbaiqi/claude-sounds-themes/main",
-    "hooks": {"stop": True, "notification": True, "error": True, "permission": False, "permission_request": False}
+    "hooks": {"stop": True, "notification": True, "error": True, "permission": False, "permission_request": True}
 }
 
 def _init_config():
