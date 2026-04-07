@@ -14,7 +14,7 @@ Play audio on Claude Code events — task done, input needed, tool calls, errors
 
 ## Features / 功能
 
-- Plays sounds on Stop, Notification, Error, and Permission (tool-call) events
+- Plays sounds on Stop, Notification, Error, Permission, and PermissionRequest events
 - Graphical Web UI for visual management (no command line required)
 - Theme support — built-in default theme, install more from the store
 - Per-project theme and hook overrides
@@ -29,6 +29,7 @@ Play audio on Claude Code events — task done, input needed, tool calls, errors
 | Notification | Input needed | ✅ On |
 | Error | Error occurred | ✅ On |
 | Permission | Before every tool call | ❌ Off |
+| PermissionRequest | When permission dialog appears (v2.0.45+) | ❌ Off |
 
 ## Installation / 安装
 
@@ -75,7 +76,8 @@ Opens a browser-based dashboard to:
 
 ```
 /sounds:cs hook status                  Show hook states / 查看状态
-/sounds:cs hook enable  permission      Enable tool-call sound / 开启工具调用提示音
+/sounds:cs hook enable  permission          Enable tool-call sound / 开启工具调用提示音
+/sounds:cs hook enable  permission_request  Enable dialog-appear sound / 开启权限弹框提示音
 /sounds:cs hook disable stop            Disable stop sound / 关闭任务完成提示音
 ```
 
@@ -122,18 +124,19 @@ Run from your project root; only affects that project.
 
 Theme packages are `.cstheme` files (custom binary format with SHA-256 integrity check).
 
-1. Create a folder with 4 MP3s + `manifest.json`:
+1. Create a folder with 5 MP3s + `manifest.json`:
 
 ```
 mytheme/
-  stop.mp3          task completed
-  notification.mp3  input needed
-  error.mp3         error occurred
-  permission.mp3    before tool call
-  manifest.json     {"name":"mytheme","display_name":"My Theme","version":"1.0.0"}
+  stop.mp3               task completed
+  notification.mp3       input needed
+  error.mp3              error occurred
+  permission.mp3         before tool call
+  permission_request.mp3 when permission dialog appears
+  manifest.json          {"name":"mytheme","display_name":"My Theme","version":"1.0.0"}
 ```
 
-All four sounds can reference the same MP3 file. / 四个文件可以是同一份音频的副本。
+All sounds can reference the same MP3 file. / 所有文件可以是同一份音频的副本。
 
 2. Pack and install:
 
