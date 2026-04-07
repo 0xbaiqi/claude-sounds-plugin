@@ -11,7 +11,7 @@ THEMES_DIR="${USER_DIR}/themes"
 CACHE_DIR="${USER_DIR}/cache"
 PLAY_SH="${PLUGIN_ROOT}/scripts/play.sh"
 CSTHEME_PY="${PLUGIN_ROOT}/scripts/cstheme.py"
-VALID_HOOKS="stop notification error permission"
+VALID_HOOKS="stop notification error permission permission_request"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -29,7 +29,8 @@ _init_config() {
     "stop": true,
     "notification": true,
     "error": true,
-    "permission": false
+    "permission": false,
+    "permission_request": false
   }
 }
 EOF
@@ -530,11 +531,13 @@ cmd_help() {
     echo "    stop         task completed / 任务完成时播放"
     echo "    notification input needed / 需要你输入时播放"
     echo "    error        error occurred / 出错时播放"
-    echo "    permission   before every tool call (off by default) / 工具调用前（默认关闭）"
+    echo "    permission         before every tool call (off by default) / 工具调用前（默认关闭）"
+    echo "    permission_request when permission dialog appears (off by default) / 权限弹框出现时（默认关闭）"
     echo ""
     echo "  /sounds:cs hook enable stop        Turn on stop sound / 开启 stop 声音"
     echo "  /sounds:cs hook disable stop       Turn off stop sound / 关闭 stop 声音"
-    echo "  /sounds:cs hook enable permission  Turn on tool-call sound / 开启工具调用提示音"
+    echo "  /sounds:cs hook enable permission         Turn on tool-call sound / 开启工具调用提示音"
+    echo "  /sounds:cs hook enable permission_request Turn on dialog-appear sound / 开启权限弹框提示音"
     echo ""
     echo "── Theme Store / 主题商店 ──────────────────────────"
     echo "  /sounds:cs theme store list             List available themes / 查看商店可用主题"
@@ -555,7 +558,8 @@ cmd_help() {
     echo "       stop.mp3          task completed / 任务完成"
     echo "       notification.mp3  input needed / 需要输入"
     echo "       error.mp3         error / 出错"
-    echo "       permission.mp3    tool call / 工具调用前"
+    echo "       permission.mp3         tool call / 工具调用前
+       permission_request.mp3 permission dialog / 权限弹框出现时"
     echo '       manifest.json     {"name":"mytheme","display_name":"My Theme","version":"1.0.0"}'
     echo "  2. Pack / 打包："
     echo "     /sounds:cs theme pack ./mytheme"

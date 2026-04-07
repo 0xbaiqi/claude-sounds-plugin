@@ -23,13 +23,13 @@
         ]
       }
     ],
-    "PreToolUse": [
+    "PermissionRequest": [
       {
         "matcher": ".*",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/play.sh\" permission"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/play.sh\" permission_request"
           }
         ]
       }

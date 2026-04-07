@@ -139,16 +139,21 @@ function renderStatus() {
   // Plugin toggle
   document.getElementById("plugin-enabled").checked = s.enabled;
 
+  // Version
+  const verEl = document.getElementById("plugin-version");
+  if (verEl && s.version) verEl.textContent = `v${s.version}`;
+
   // Theme label
   document.getElementById("current-theme").textContent = s.theme;
 
   // Hooks
   const hooks = s.hooks || {};
   const hookDescKeys = {
-    stop:         "hookStop",
-    notification: "hookNotification",
-    error:        "hookError",
-    permission:   "hookPermission",
+    stop:               "hookStop",
+    notification:       "hookNotification",
+    error:              "hookError",
+    permission:         "hookPermission",
+    permission_request: "hookPermissionRequest",
   };
   const container = document.getElementById("hooks-list");
   container.innerHTML = Object.entries(hookDescKeys).map(([h, key]) => `
@@ -404,10 +409,11 @@ function renderProject(data) {
   const exists = data.exists;
 
   const hookDescs = {
-    stop:         "任务完成时播放",
-    notification: "需要输入时播放",
-    error:        "出错时播放",
-    permission:   "工具调用前播放",
+    stop:               "任务完成时播放",
+    notification:       "需要输入时播放",
+    error:              "出错时播放",
+    permission:         "工具调用前播放",
+    permission_request: "权限弹框出现时播放",
   };
   const hooks      = cfg.hooks || {};
   const themes     = state.themes.length ? state.themes : [];

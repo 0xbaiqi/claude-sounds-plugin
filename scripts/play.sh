@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Claude Sounds Plugin - Audio Player
 # Called by hooks: play.sh <event>
-# Events: stop, notification, error, permission
+# Events: stop, notification, error, permission, permission_request
+# Hook mapping: Stop→stop, Notification→notification, PermissionRequest→permission_request
 
 EVENT="${1:-}"
 [ -z "${EVENT}" ] && exit 0
